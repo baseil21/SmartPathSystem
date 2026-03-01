@@ -12,15 +12,17 @@ DB_FILE = "data_storage.csv"
 
 def load_data():
     if os.path.exists(DB_FILE):
-        return pd.read_csv(DB_FILE).to_dict('records')
-    else:
-        initial = []
-        for sec, count in [("قسم الخروج", 14), ("قسم الدخول", 14), ("قسم صالة القدوم", 8)]:
-            for i in range(1, count + 1):
-                dtype = "🚛 شحن" if i == 13 and sec != "قسم صالة القدوم" else "⭐ خاص" if i == 14 and sec != "قسم صالة القدوم" else "عادي"
-                initial.append({"القسم": sec, "المسار": i, "الحالة": "فارغ", "الموظف": "-", "النوع": dtype})
-        pd.DataFrame(initial).to_csv(DB_FILE, index=False)
-        return initial
+        try:
+            return pd.read_csv(DB_FILE).to_dict('records')
+        except:
+            pass
+    initial = []
+    for sec, count in [("قسم الخروج", 14), ("قسم الدخول", 14), ("قسم صالة القدوم", 8)]:
+        for i in range(1, count + 1):
+            dtype = "🚛 شحن" if i == 13 and sec != "قسم صالة القدوم" else "⭐ خاص" if i == 14 and sec != "قسم صالة القدوم" else "عادي"
+            initial.append({"القسم": sec, "المسار": i, "الحالة": "فارغ", "الموظف": "-", "النوع": dtype})
+    pd.DataFrame(initial).to_csv(DB_FILE, index=False)
+    return initial
 
 def sync_data(data):
     pd.DataFrame(data).to_csv(DB_FILE, index=False)
@@ -58,14 +60,12 @@ else:
         
         for i, row in enumerate(lanes):
             with cols[i % cols_count]:
-                # إصلاح خطأ الألوان هنا
-                bg_color = "#28a745" if row["الحالة"] == "مشغول" else "#dc3545" if row["الحالة"] == "عطل" else "#6c757d"
+                # إصلاح جذري لخطأ الألوان (TypeError)
+                bg = "#28a745" if row["الحالة"] == "مشغول" else "#dc3545" if row["الحالة"] == "عطل" else "#6c757d"
                 
-                st.markdown(f"""
-                    <div style='background-color:{bg_color}; color:white; padding:12px; border-radius:10px; text-align:center; margin-bottom:10px;'>
-                        {row['النوع']} {row['المسار']}<br><b>{row['الموظف']}</b>
-                    </div>
-                """, unsafe_allow_case=True)
+                # استخدام f-string بسيط لتجنب الأخطاء
+                content = f"{row['النوع']} {row['المسار']}<br><b>{row['الموظف']}</b>"
+                st.markdown(f"<div style='background-color:{bg}; color:white; padding:12px; border-radius:10px; text-align:center; margin-bottom:10px;'>{content}</div>", unsafe_allow_case=True)
                 
                 if row["الحالة"] == "فارغ":
                     if st.button("استلام", key=f"in_{row['المسار']}_{sec}"):
